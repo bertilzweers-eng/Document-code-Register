@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentcode Register — KAM Managementsysteem</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#111827;
+    --ink-soft:#4B5563;
+    --line:#E2E5EA;
+    --surface:#FFFFFF;
+    --canvas:#F5F6F8;
+    --accent:#1D4ED8;
+    --accent-soft:#EEF2FF;
+    --ok:#0F7B4E;
+    --ok-soft:#E7F6EE;
+    --warn:#B45309;
+    --warn-soft:#FEF3E2;
+    --pending:#4338CA;
+    --pending-soft:#EEF0FE;
+    --danger:#B42318;
+    --danger-soft:#FEECEB;
+  }
+  html,body{background:var(--canvas); font-family:'Inter',sans-serif; color:var(--ink);}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:10px;}
+  .code-pill{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:.8rem;
+    letter-spacing:.02em;
+    background:var(--accent-soft);
+    color:var(--accent);
+    border:1px solid #C7D2FE;
+    padding:.2rem .55rem;
+    border-radius:6px;
+    white-space:nowrap;
+  }
+  .code-pill-sm{font-size:.65rem; padding:.08rem .35rem;}
+  .code-pill-link{cursor:pointer; text-decoration:none;}
+  .code-pill-link:hover{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .status-badge{font-size:.72rem; font-weight:600; padding:.2rem .55rem; border-radius:999px; display:inline-flex; align-items:center; gap:.35rem; white-space:nowrap;}
+  .status-badge::before{content:''; width:6px; height:6px; border-radius:999px; background:currentColor;}
+  .status-concept{background:#F3F4F6; color:#4B5563;}
+  .status-goedkeuring{background:var(--pending-soft); color:var(--pending);}
+  .status-vrijgegeven{background:var(--ok-soft); color:var(--ok);}
+  input[type=text], input[type=number], select{
+    border:1px solid var(--line); border-radius:7px; padding:.5rem .65rem; font-size:.875rem; width:100%; background:#fff; color:var(--ink);
+  }
+  input:focus, select:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
+  input:disabled{background:#F3F4F6; color:#9CA3AF;}
+  label.field-label{font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); display:block; margin-bottom:.3rem;}
+  .btn{font-size:.85rem; font-weight:600; padding:.55rem 1rem; border-radius:7px; transition:background .12s ease, border-color .12s ease; cursor:pointer; display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap;}
+  .btn-primary{background:var(--accent); color:#fff; border:1px solid var(--accent);}
+  .btn-primary:hover{background:#1740B0;}
+  .btn-primary:disabled{background:#9CA3AF; border-color:#9CA3AF; cursor:not-allowed;}
+  .btn-ghost{background:#fff; color:var(--ink); border:1px solid var(--line);}
+  .btn-ghost:hover{background:#F9FAFB;}
+  .btn-danger-ghost{background:#fff; color:var(--danger); border:1px solid #F3C6C0;}
+  .btn-danger-ghost:hover{background:var(--danger-soft);}
+  .btn-danger{background:var(--danger); color:#fff; border:1px solid var(--danger);}
+  .btn-danger:hover{background:#932016;}
+  .btn-sm{font-size:.75rem; padding:.32rem .6rem; border-radius:6px;}
+  table{border-collapse:separate; border-spacing:0;}
+  thead th{font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:700; text-align:left; padding:.65rem .75rem; border-bottom:1px solid var(--line); background:#FAFBFC; position:sticky; top:0;}
+  tbody td{padding:.8rem .75rem; border-bottom:1px solid var(--line); font-size:.85rem; vertical-align:middle;}
+  tbody tr:nth-child(even){background:#FAFBFC;}
+  tbody tr:hover{background:var(--accent-soft);}
+  /* Domein-/typecode: bewust ingetogen (grijze mono-tekst, geen pill) zodat de blauwe
+     documentcode-pill het enige prominente label per rij blijft en het overzicht rustig oogt. */
+  .term-code{font-family:'IBM Plex Mono',monospace; font-size:.7rem; color:#9CA3AF; margin-left:.4rem;}
+  .err-text{color:var(--danger); font-size:.75rem; margin-top:.25rem; min-height:1rem;}
+  .modal-backdrop{background:rgba(17,24,39,.45); backdrop-filter:blur(1px);}
+  ::-webkit-scrollbar{height:8px; width:8px;}
+  ::-webkit-scrollbar-thumb{background:#D1D5DB; border-radius:4px;}
+  .seq-badge{font-family:'IBM Plex Mono',monospace; font-size:.7rem; color:var(--ink-soft); background:#F3F4F6; padding:.15rem .4rem; border-radius:5px;}
+
+  /* --- Vrije-invoer + autocomplete + code-resolutie --- */
+  .term-field{position:relative;}
+  .autocomplete-list{
+    position:absolute; z-index:30; top:calc(100% + 2px); left:0; right:0;
+    background:#fff; border:1px solid var(--line); border-radius:7px;
+    max-height:180px; overflow-y:auto; box-shadow:0 8px 20px rgba(17,24,39,.10);
+  }
+  .autocomplete-item{padding:.45rem .65rem; font-size:.8rem; cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:.5rem;}
+  .autocomplete-item:hover, .autocomplete-item.active{background:var(--accent-soft);}
+  .field-hint{font-size:.7rem; margin-top:.35rem; display:flex; align-items:center; gap:.35rem; min-height:1rem;}
+  .field-hint.new{color:var(--accent);}
+  .field-hint.existing{color:var(--ink-soft);}
+  .field-hint.error{color:var(--danger);}
+  .inline-check{display:flex; align-items:center; gap:.35rem; margin-top:.4rem;}
+  .inline-check input{width:auto;}
+  .inline-check label{font-size:.72rem; color:var(--ink-soft); cursor:pointer;}
+  .manual-code-input{margin-top:.4rem;}
+  .manual-code-input input{text-transform:uppercase;}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header class="border-b" style="border-color:var(--line); background:var(--surface);">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div>
+      <h1 class="text-lg font-bold" style="color:var(--ink);">Documentcode Register</h1>
+      <p class="text-xs" style="color:var(--ink-soft);">Centrale registratie en generator voor documentcodes — KAM Managementsysteem</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span id="recordCount" class="seq-badge">0 registraties</span>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+
+  <!-- ============================================================
+       GENERATOR / REGISTRATIE-FORMULIER
+       ============================================================ -->
+  <section class="card p-5">
+    <h2 class="text-sm font-bold mb-1" style="color:var(--ink);">Nieuwe documentcode genereren</h2>
+    <p class="text-xs mb-4" style="color:var(--ink-soft);">Domein en documenttype zijn vrije invoer. De tool leidt hier automatisch een codeafkorting van af en onthoudt deze voor volgend gebruik.</p>
+    <form id="regForm" class="grid grid-cols-1 md:grid-cols-6 gap-4 items-start" novalidate>
+
+      <!-- DOCUMENTTYPE: vrije invoer + autocomplete + optionele handmatige code -->
+      <div class="md:col-span-1 term-field">
+        <label class="field-label" for="fTypeInput">Documenttype</label>
+        <input type="text" id="fTypeInput" placeholder="Bijv. Procedure" autocomplete="off" required>
+        <div id="fTypeSuggestions" class="autocomplete-list hidden"></div>
+        <div id="fTypeHint" class="field-hint"></div>
+        <div id="fTypeManualToggleWrap" class="inline-check">
+          <input type="checkbox" id="fTypeManualToggle">
+          <label for="fTypeManualToggle">Handmatige code</label>
+        </div>
+        <div id="fTypeManualWrap" class="manual-code-input hidden">
+          <input type="text" id="fTypeManualCode" class="mono" maxlength="6" placeholder="bv. PRO">
+        </div>
+      </div>
+
+      <!-- DOMEIN: vrije invoer + autocomplete + optionele handmatige code -->
+      <div class="md:col-span-1 term-field">
+        <label class="field-label" for="fDomeinInput">Domein</label>
+        <input type="text" id="fDomeinInput" placeholder="Bijv. Kwaliteit" autocomplete="off" required>
+        <div id="fDomeinSuggestions" class="autocomplete-list hidden"></div>
+        <div id="fDomeinHint" class="field-hint"></div>
+        <div id="fDomeinManualToggleWrap" class="inline-check">
+          <input type="checkbox" id="fDomeinManualToggle">
+          <label for="fDomeinManualToggle">Handmatige code</label>
+        </div>
+        <div id="fDomeinManualWrap" class="manual-code-input hidden">
+          <input type="text" id="fDomeinManualCode" class="mono" maxlength="6" placeholder="bv. KWA">
+        </div>
+      </div>
+
+      <div class="md:col-span-1">
+        <label class="field-label" for="fVolgnummer">Volgnummer</label>
+        <input type="number" id="fVolgnummer" min="1" step="1" placeholder="auto" class="mono">
+        <div class="inline-check">
+          <input type="checkbox" id="fAutoNr" checked>
+          <label for="fAutoNr">Automatisch ophogen</label>
+        </div>
+      </div>
+
+      <div class="md:col-span-1">
+        <label class="field-label" for="fTitel">Documenttitel</label>
+        <input type="text" id="fTitel" placeholder="Bijv. Procedure Incidentmelding" required>
+      </div>
+
+      <div class="md:col-span-1">
+        <label class="field-label" for="fEigenaar">Proceseigenaar</label>
+        <input type="text" id="fEigenaar" placeholder="Naam / rol" required>
+      </div>
+
+      <div class="md:col-span-1">
+        <label class="field-label" for="fStatus">Status</label>
+        <select id="fStatus">
+          <option value="Concept">Concept</option>
+          <option value="Ter Goedkeuring">Ter Goedkeuring</option>
+          <option value="Vrijgegeven">Vrijgegeven</option>
+        </select>
+      </div>
+
+      <div class="md:col-span-6">
+        <label class="field-label" for="fUrl">Documentlocatie (SharePoint / OneDrive / cloud-URL) — optioneel</label>
+        <input type="text" id="fUrl" placeholder="https://rova.sharepoint.com/sites/...">
+        <span id="fUrlError" class="err-text"></span>
+      </div>
+
+      <div class="md:col-span-6 flex items-end justify-between gap-4 pt-3 border-t" style="border-color:var(--line);">
+        <div>
+          <span class="field-label mb-1">Voorbeeld documentcode</span>
+          <span id="previewCode" class="code-pill">—</span>
+        </div>
+        <div class="flex flex-col items-end">
+          <button type="submit" id="submitBtn" class="btn btn-primary">Documentcode registreren</button>
+          <span id="formError" class="err-text"></span>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- ============================================================
+       FILTER / ZOEK / EXPORT BALK
+       ============================================================ -->
+  <section class="card p-4">
+    <div class="flex flex-wrap items-end gap-3">
+      <div class="flex-1 min-w-[200px]">
+        <label class="field-label" for="qSearch">Zoeken</label>
+        <input type="text" id="qSearch" placeholder="Code, titel, domein, type of proceseigenaar...">
+      </div>
+      <div class="w-44">
+        <label class="field-label" for="qType">Documenttype</label>
+        <select id="qType">
+          <option value="">Alle types</option>
+        </select>
+      </div>
+      <div class="w-44">
+        <label class="field-label" for="qDomein">Domein</label>
+        <select id="qDomein">
+          <option value="">Alle domeinen</option>
+        </select>
+      </div>
+      <div class="w-44">
+        <label class="field-label" for="qStatus">Status</label>
+        <select id="qStatus">
+          <option value="">Alle statussen</option>
+          <option value="Concept">Concept</option>
+          <option value="Ter Goedkeuring">Ter Goedkeuring</option>
+          <option value="Vrijgegeven">Vrijgegeven</option>
+        </select>
+      </div>
+      <button id="clearFiltersBtn" class="btn btn-ghost btn-sm">Filters wissen</button>
+
+      <div class="flex-1"></div>
+
+      <input type="file" id="importFileInput" accept="application/json" class="hidden">
+      <button id="importBtn" class="btn btn-ghost">JSON importeren</button>
+      <button id="exportJsonBtn" class="btn btn-ghost">JSON exporteren</button>
+      <button id="exportCsvBtn" class="btn btn-primary">CSV exporteren</button>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       REGISTRATIETABEL
+       ============================================================ -->
+  <section class="card overflow-hidden">
+    <div class="overflow-x-auto max-h-[520px] overflow-y-auto">
+      <table class="w-full">
+        <thead>
+          <tr>
+            <th>Documentcode</th>
+            <th>Titel</th>
+            <th>Documenttype</th>
+            <th>Domein</th>
+            <th>Proceseigenaar</th>
+            <th>Status</th>
+            <th>Mutatiedatum</th>
+            <th class="text-right">Acties</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="emptyState" class="hidden text-center py-14">
+        <p class="text-sm font-medium" style="color:var(--ink-soft);">Geen registraties gevonden</p>
+        <p class="text-xs mt-1" style="color:#9CA3AF;">Genereer hierboven een nieuwe documentcode of pas de filters aan</p>
+      </div>
+    </div>
+  </section>
+
+  <p class="text-xs text-center pb-4" style="color:#9CA3AF;">
+    Gegevens en de termenlijst (domein-/typeafkortingen) worden lokaal opgeslagen in de browser (localStorage). Maak regelmatig een JSON-export voor back-up en deel deze bij overdracht naar een ander apparaat — deze bevat zowel de registraties als de opgebouwde codetoewijzingen.
+  </p>
+</main>
+
+<!-- ============================================================
+     MODAL: WIJZIGEN
+     ============================================================ -->
+<div id="editModal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 hidden z-50">
+  <div class="card w-full max-w-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-bold">Registratie wijzigen</h3>
+      <span id="editCodeLabel" class="code-pill"></span>
+    </div>
+    <form id="editForm" class="space-y-4">
+      <input type="hidden" id="eId">
+      <div>
+        <label class="field-label" for="eTitel">Documenttitel</label>
+        <input type="text" id="eTitel" required>
+      </div>
+      <div>
+        <label class="field-label" for="eEigenaar">Proceseigenaar</label>
+        <input type="text" id="eEigenaar" required>
+      </div>
+      <div>
+        <label class="field-label" for="eStatus">Status</label>
+        <select id="eStatus">
+          <option value="Concept">Concept</option>
+          <option value="Ter Goedkeuring">Ter Goedkeuring</option>
+          <option value="Vrijgegeven">Vrijgegeven</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label" for="eUrl">Documentlocatie (SharePoint / OneDrive / cloud-URL) — optioneel</label>
+        <input type="text" id="eUrl" placeholder="https://rova.sharepoint.com/sites/...">
+        <span id="eUrlError" class="err-text"></span>
+      </div>
+      <p class="text-xs" style="color:var(--ink-soft);">Domein, documenttype en volgnummer liggen vast na registratie — de documentcode zelf verandert nooit.</p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" id="editCancelBtn" class="btn btn-ghost">Annuleren</button>
+        <button type="submit" class="btn btn-primary">Wijzigingen opslaan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL: VERWIJDEREN BEVESTIGING
+     ============================================================ -->
+<div id="deleteModal" class="fixed inset-0 modal-backdrop flex items-center justify-center p-4 hidden z-50">
+  <div class="card w-full max-w-sm p-6">
+    <h3 class="text-sm font-bold mb-2">Registratie verwijderen?</h3>
+    <p class="text-sm mb-4" style="color:var(--ink-soft);">
+      Je staat op het punt <span id="deleteCodeLabel" class="code-pill"></span> definitief te verwijderen uit het register. Deze actie kan niet ongedaan worden gemaakt.
+    </p>
+    <div class="flex justify-end gap-2">
+      <button type="button" id="deleteCancelBtn" class="btn btn-ghost">Annuleren</button>
+      <button type="button" id="deleteConfirmBtn" class="btn btn-danger">Definitief verwijderen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   DOCUMENTCODE REGISTER — CLIENT-SIDE APPLICATIELOGICA (v2)
+   ------------------------------------------------------------------
+   Kernwijziging t.o.v. v1: Domein en Documenttype zijn vrije invoer.
+   De tool leidt hieruit automatisch een 2-3-letterige codeafkorting af
+   en onthoudt de koppeling term -> code in een aparte "termregistry",
+   zodat dezelfde term altijd dezelfde afkorting oplevert (consistentie
+   over tijd). Gebruikers kunnen per nieuwe term ook zelf een code
+   opgeven (handmatige override), mits deze nog niet in gebruik is.
+
+   Codeformaat: {TYPECODE}-{DOMEINCODE}-{VOLGNUMMER, 3 posities}
+   Voorbeeld:   PRO-KWA-001
+
+   ------------------------------------------------------------------
+   LOCALSTORAGE-STRUCTUUR
+   ------------------------------------------------------------------
+   kam_doccode_register   -> array van registratie-records:
+     {
+       id, code,
+       domeinTerm, domeinCode,
+       typeTerm, typeCode,
+       volgnr,
+       titel, eigenaar, status,
+       aangemaakt, gewijzigd   // ISO-datums
+     }
+
+   kam_doccode_termregistry -> { domein: {...}, type: {...} }
+     Elke sub-registry is een dictionary op genormaliseerde term:
+       { "<genormaliseerde term>": { label: "<origineel getypte term>", code: "KWA" } }
+
+   Normalisatie = trim + lowercase + diakritische tekens verwijderen,
+   zodat "Kwaliteit", "kwaliteit " en "Kwaliteit  " als dezelfde
+   categorie worden herkend en dezelfde code + volgnummerreeks delen.
+   ================================================================== */
+
+const STORAGE_KEY_RECORDS = 'kam_doccode_register';
+const STORAGE_KEY_TERMS = 'kam_doccode_termregistry';
+
+const STATUS_CLASS = { 'Concept': 'status-concept', 'Ter Goedkeuring': 'status-goedkeuring', 'Vrijgegeven': 'status-vrijgegeven' };
+
+let records = [];
+let termRegistry = { domein: {}, type: {} };
+
+/* ------------------------------------------------------------------
+   PERSISTENTIE
+   ------------------------------------------------------------------ */
+function loadRecords() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_RECORDS);
+    records = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(records)) records = [];
+  } catch (e) {
+    console.error('Kon registratie niet laden uit localStorage:', e);
+    records = [];
+  }
+  migrateCodeOrder();
+}
+
+/**
+ * Herberekent r.code voor bestaand opgeslagen registraties naar het huidige
+ * codeformaat (TYPECODE-DOMEINCODE-VOLGNUMMER). Nodig omdat de volledige code
+ * als string is opgeslagen; zonder deze migratie zouden records die vóór de
+ * volgordewijziging zijn aangemaakt met een verouderde code blijven staan.
+ */
+function migrateCodeOrder() {
+  let wijzigingen = false;
+  records.forEach(r => {
+    if (r.domeinCode && r.typeCode && r.volgnr) {
+      const herberekend = buildCode(r.domeinCode, r.typeCode, r.volgnr);
+      if (r.code !== herberekend) { r.code = herberekend; wijzigingen = true; }
+    }
+  });
+  if (wijzigingen) saveRecords();
+}
+
+function saveRecords() {
+  try {
+    localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(records));
+  } catch (e) {
+    console.error('Kon registratie niet opslaan in localStorage:', e);
+    alert('Opslaan is mislukt. Mogelijk is de lokale opslag vol of niet beschikbaar in deze browser.');
+  }
+}
+
+function loadTermRegistry() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_TERMS);
+    const parsed = raw ? JSON.parse(raw) : null;
+    termRegistry = {
+      domein: (parsed && parsed.domein) || {},
+      type: (parsed && parsed.type) || {}
+    };
+  } catch (e) {
+    console.error('Kon termregistry niet laden uit localStorage:', e);
+    termRegistry = { domein: {}, type: {} };
+  }
+}
+
+function saveTermRegistry() {
+  try {
+    localStorage.setItem(STORAGE_KEY_TERMS, JSON.stringify(termRegistry));
+  } catch (e) {
+    console.error('Kon termregistry niet opslaan in localStorage:', e);
+  }
+}
+
+/* ------------------------------------------------------------------
+   NORMALISATIE & CODE-AFLEIDING
+   ------------------------------------------------------------------ */
+function normalizeTerm(term) {
+  return term
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // diakritische tekens strippen
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+/** Automatische afkorting: eerste 2-3 letters van de vrije invoer. */
+function deriveAbbrev(term) {
+  const letters = term
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z]/g, '')
+    .toUpperCase();
+  if (letters.length >= 3) return letters.slice(0, 3);
+  if (letters.length === 2) return letters;
+  if (letters.length === 1) return letters + 'X';
+  return 'XX';
+}
+
+/** Maakt een afkorting uniek binnen de gegeven set bestaande codes (cijfer- dan lettersuffix). */
+function makeUniqueCode(base, usedCodes) {
+  if (!usedCodes.has(base)) return base;
+  for (let i = 2; i <= 9; i++) {
+    const candidate = base.slice(0, 2) + i;
+    if (!usedCodes.has(candidate)) return candidate;
+  }
+  for (let c = 65; c <= 90; c++) {
+    const candidate = base.slice(0, 2) + String.fromCharCode(c);
+    if (!usedCodes.has(candidate)) return candidate;
+  }
+  return base + String(Date.now()).slice(-3); // extreem edge-case fallback
+}
+
+/**
+ * Lost de code voor een vrije term op binnen de gegeven kind-registry ('domein'|'type').
+ * - Bestaande term (na normalisatie)  -> retourneert altijd de reeds vastgelegde code.
+ * - Nieuwe term + handmatige code     -> valideert uniciteit, geeft foutmelding bij conflict.
+ * - Nieuwe term + geen handmatige code-> leidt automatisch 2-3 letters af, maakt uniek bij botsing.
+ * commit=true schrijft een nieuwe term daadwerkelijk weg in de registry; commit=false ("peek")
+ * wordt gebruikt voor live preview zonder de registry al te muteren.
+ */
+function resolveTermCode(kind, termRaw, manualCodeRaw, commit) {
+  const term = (termRaw || '').trim();
+  if (!term) return { code: null, label: '', isNew: false, error: null };
+
+  const registry = termRegistry[kind];
+  const key = normalizeTerm(term);
+
+  if (registry[key]) {
+    return { code: registry[key].code, label: registry[key].label, isNew: false, error: null };
+  }
+
+  const manualCode = (manualCodeRaw || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const usedCodes = new Set(Object.values(registry).map(r => r.code));
+  let code;
+
+  if (manualCode) {
+    if (usedCodes.has(manualCode)) {
+      return { code: null, label: term, isNew: true, error: `Code "${manualCode}" is al in gebruik voor een andere ${kind === 'domein' ? 'domein' : 'documenttype'}-term.` };
+    }
+    code = manualCode;
+  } else {
+    code = makeUniqueCode(deriveAbbrev(term), usedCodes);
+  }
+
+  if (commit) {
+    registry[key] = { label: term, code };
+  }
+
+  return { code, label: term, isNew: true, error: null };
+}
+
+/* ------------------------------------------------------------------
+   CODEGENERATIE — VOLGNUMMER (scope: per Domeincode+Typecode combinatie)
+   ------------------------------------------------------------------ */
+function padVolgnr(n) { return String(n).padStart(3, '0'); }
+
+/**
+ * Lichte validatie van de optionele documentlocatie-URL: alleen een http(s)-scheme
+ * wordt afgedwongen (geen strikte SharePoint/OneDrive-domeincontrole, om ook andere
+ * cloudomgevingen of interne links toe te staan). Leeg is altijd geldig (optioneel veld).
+ */
+function validateUrl(raw) {
+  const url = (raw || '').trim();
+  if (!url) return { valid: true, url: '' };
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return { valid: false, url, error: 'De link moet beginnen met http:// of https://.' };
+    }
+    return { valid: true, url };
+  } catch {
+    return { valid: false, url, error: 'Dit is geen geldige URL. Controleer de link en probeer opnieuw.' };
+  }
+}
+/** Codeformaat: {TYPECODE}-{DOMEINCODE}-{VOLGNUMMER}, bijv. PRO-KWA-001. */
+function buildCode(domeinCode, typeCode, volgnr) { return `${typeCode}-${domeinCode}-${padVolgnr(volgnr)}`; }
+
+function highestVolgnrFor(domeinCode, typeCode) {
+  const scoped = records.filter(r => r.domeinCode === domeinCode && r.typeCode === typeCode);
+  if (scoped.length === 0) return 0;
+  return Math.max(...scoped.map(r => r.volgnr));
+}
+function nextVolgnrFor(domeinCode, typeCode) { return highestVolgnrFor(domeinCode, typeCode) + 1; }
+
+function isDuplicateCode(domeinCode, typeCode, volgnr, excludeId = null) {
+  const code = buildCode(domeinCode, typeCode, volgnr).toLowerCase();
+  return records.some(r => r.id !== excludeId && r.code.toLowerCase() === code);
+}
+
+/* ------------------------------------------------------------------
+   FORMULIERELEMENTEN
+   ------------------------------------------------------------------ */
+const fDomeinInput = document.getElementById('fDomeinInput');
+const fDomeinSuggestions = document.getElementById('fDomeinSuggestions');
+const fDomeinHint = document.getElementById('fDomeinHint');
+const fDomeinManualToggleWrap = document.getElementById('fDomeinManualToggleWrap');
+const fDomeinManualToggle = document.getElementById('fDomeinManualToggle');
+const fDomeinManualWrap = document.getElementById('fDomeinManualWrap');
+const fDomeinManualCode = document.getElementById('fDomeinManualCode');
+
+const fTypeInput = document.getElementById('fTypeInput');
+const fTypeSuggestions = document.getElementById('fTypeSuggestions');
+const fTypeHint = document.getElementById('fTypeHint');
+const fTypeManualToggleWrap = document.getElementById('fTypeManualToggleWrap');
+const fTypeManualToggle = document.getElementById('fTypeManualToggle');
+const fTypeManualWrap = document.getElementById('fTypeManualWrap');
+const fTypeManualCode = document.getElementById('fTypeManualCode');
+
+const fVolgnummer = document.getElementById('fVolgnummer');
+const fAutoNr = document.getElementById('fAutoNr');
+const fTitel = document.getElementById('fTitel');
+const fEigenaar = document.getElementById('fEigenaar');
+const fStatus = document.getElementById('fStatus');
+const fUrl = document.getElementById('fUrl');
+const fUrlError = document.getElementById('fUrlError');
+const previewCode = document.getElementById('previewCode');
+const formError = document.getElementById('formError');
+const submitBtn = document.getElementById('submitBtn');
+
+/* ------------------------------------------------------------------
+   HERBRUIKBARE TERM-VELD LOGICA (autocomplete + hint + manual toggle)
+   Wordt geparametriseerd toegepast op zowel het Domein- als het
+   Documenttype-veld om duplicatie van logica te vermijden.
+   ------------------------------------------------------------------ */
+function setupTermField(kind, els) {
+  function renderSuggestions() {
+    const term = els.input.value.trim();
+    const registry = termRegistry[kind];
+    const keyTyped = normalizeTerm(term);
+    const matches = Object.entries(registry)
+      .filter(([key, entry]) => term.length > 0 && key.includes(keyTyped) && key !== keyTyped)
+      .slice(0, 6);
+
+    if (matches.length === 0) {
+      els.suggestions.classList.add('hidden');
+      els.suggestions.innerHTML = '';
+      return;
+    }
+    els.suggestions.innerHTML = matches.map(([key, entry]) => `
+      <div class="autocomplete-item" data-label="${escapeHtml(entry.label)}">
+        <span>${escapeHtml(entry.label)}</span>
+        <span class="code-pill code-pill-sm mono">${escapeHtml(entry.code)}</span>
+      </div>
+    `).join('');
+    els.suggestions.classList.remove('hidden');
+  }
+
+  function updateHintAndToggle() {
+    const term = els.input.value.trim();
+    if (!term) {
+      els.hint.textContent = '';
+      els.hint.className = 'field-hint';
+      els.manualToggleWrap.classList.remove('hidden');
+      els.manualWrap.classList.toggle('hidden', !els.manualToggle.checked);
+      return;
+    }
+
+    const key = normalizeTerm(term);
+    const existing = termRegistry[kind][key];
+
+    if (existing) {
+      // Bekende term: code ligt vast, handmatige invoer is hier niet van toepassing
+      els.hint.textContent = `Bestaande term — code ligt vast: ${existing.code}`;
+      els.hint.className = 'field-hint existing';
+      els.manualToggleWrap.classList.add('hidden');
+      els.manualWrap.classList.add('hidden');
+    } else {
+      els.manualToggleWrap.classList.remove('hidden');
+      els.manualWrap.classList.toggle('hidden', !els.manualToggle.checked);
+      const manualVal = els.manualToggle.checked ? els.manualCode.value : '';
+      const result = resolveTermCode(kind, term, manualVal, false);
+      if (result.error) {
+        els.hint.textContent = result.error;
+        els.hint.className = 'field-hint error';
+      } else {
+        els.hint.textContent = `Nieuwe term — ${els.manualToggle.checked ? 'handmatige' : 'automatische'} code: ${result.code}`;
+        els.hint.className = 'field-hint new';
+      }
+    }
+  }
+
+  els.input.addEventListener('input', () => { renderSuggestions(); updateHintAndToggle(); updatePreview(); });
+  els.input.addEventListener('focus', renderSuggestions);
+  els.input.addEventListener('blur', () => setTimeout(() => els.suggestions.classList.add('hidden'), 150));
+
+  els.suggestions.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('.autocomplete-item');
+    if (!item) return;
+    els.input.value = item.dataset.label;
+    els.suggestions.classList.add('hidden');
+    updateHintAndToggle();
+    updatePreview();
+  });
+
+  els.manualToggle.addEventListener('change', () => {
+    els.manualWrap.classList.toggle('hidden', !els.manualToggle.checked);
+    if (!els.manualToggle.checked) els.manualCode.value = '';
+    updateHintAndToggle();
+    updatePreview();
+  });
+  els.manualCode.addEventListener('input', () => { updateHintAndToggle(); updatePreview(); });
+
+  return { updateHintAndToggle };
+}
+
+const domeinFieldEls = {
+  input: fDomeinInput, suggestions: fDomeinSuggestions, hint: fDomeinHint,
+  manualToggleWrap: fDomeinManualToggleWrap, manualToggle: fDomeinManualToggle,
+  manualWrap: fDomeinManualWrap, manualCode: fDomeinManualCode
+};
+const typeFieldEls = {
+  input: fTypeInput, suggestions: fTypeSuggestions, hint: fTypeHint,
+  manualToggleWrap: fTypeManualToggleWrap, manualToggle: fTypeManualToggle,
+  manualWrap: fTypeManualWrap, manualCode: fTypeManualCode
+};
+
+const domeinFieldCtl = setupTermField('domein', domeinFieldEls);
+const typeFieldCtl = setupTermField('type', typeFieldEls);
+
+/* ------------------------------------------------------------------
+   LIVE PREVIEW VAN DE VOLLEDIGE DOCUMENTCODE
+   ------------------------------------------------------------------ */
+function currentPreviewVolgnr(domeinCode, typeCode) {
+  if (fAutoNr.checked) return nextVolgnrFor(domeinCode, typeCode);
+  const v = parseInt(fVolgnummer.value, 10);
+  return Number.isFinite(v) && v > 0 ? v : nextVolgnrFor(domeinCode, typeCode);
+}
+
+function updatePreview() {
+  formError.textContent = '';
+  submitBtn.disabled = false;
+
+  const domeinResult = resolveTermCode('domein', fDomeinInput.value, fDomeinManualToggle.checked ? fDomeinManualCode.value : '', false);
+  const typeResult = resolveTermCode('type', fTypeInput.value, fTypeManualToggle.checked ? fTypeManualCode.value : '', false);
+
+  if (!fDomeinInput.value.trim() || !fTypeInput.value.trim()) {
+    previewCode.textContent = '—';
+    return;
+  }
+  if (domeinResult.error || typeResult.error) {
+    previewCode.textContent = '—';
+    return;
+  }
+
+  const volgnr = currentPreviewVolgnr(domeinResult.code, typeResult.code);
+  previewCode.textContent = buildCode(domeinResult.code, typeResult.code, volgnr);
+
+  // Live-validatie handmatig volgnummer
+  if (!fAutoNr.checked) {
+    const raw = fVolgnummer.value;
+    if (raw !== '') {
+      const v = parseInt(raw, 10);
+      if (!Number.isInteger(v) || v <= 0) {
+        formError.textContent = 'Volgnummer moet een positief geheel getal zijn.';
+        submitBtn.disabled = true;
+      } else if (isDuplicateCode(domeinResult.code, typeResult.code, v)) {
+        formError.textContent = `Documentcode ${buildCode(domeinResult.code, typeResult.code, v)} bestaat al binnen deze combinatie.`;
+        submitBtn.disabled = true;
+      }
+    }
+  }
+}
+
+function refreshVolgnummerFieldState() {
+  fVolgnummer.disabled = fAutoNr.checked;
+  if (fAutoNr.checked) fVolgnummer.value = '';
+  updatePreview();
+}
+fVolgnummer.addEventListener('input', updatePreview);
+fAutoNr.addEventListener('change', refreshVolgnummerFieldState);
+fUrl.addEventListener('input', () => {
+  const result = validateUrl(fUrl.value);
+  fUrlError.textContent = result.valid ? '' : result.error;
+});
+
+/* ------------------------------------------------------------------
+   FORMULIER: REGISTREREN (SUBMIT)
+   ------------------------------------------------------------------ */
+document.getElementById('regForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+
+  const domeinTerm = fDomeinInput.value.trim();
+  const typeTerm = fTypeInput.value.trim();
+  const titel = fTitel.value.trim();
+  const eigenaar = fEigenaar.value.trim();
+  const status = fStatus.value;
+
+  if (!domeinTerm || !typeTerm || !titel || !eigenaar) {
+    formError.textContent = 'Domein, documenttype, documenttitel en proceseigenaar zijn verplicht.';
+    return;
+  }
+
+  const urlResult = validateUrl(fUrl.value);
+  if (!urlResult.valid) { fUrlError.textContent = urlResult.error; formError.textContent = 'Controleer de documentlocatie-URL.'; return; }
+  fUrlError.textContent = '';
+
+  // Peek zonder te committen, om eerst alle validaties te doorlopen
+  const domeinResult = resolveTermCode('domein', domeinTerm, fDomeinManualToggle.checked ? fDomeinManualCode.value : '', false);
+  if (domeinResult.error) { formError.textContent = domeinResult.error; return; }
+
+  const typeResult = resolveTermCode('type', typeTerm, fTypeManualToggle.checked ? fTypeManualCode.value : '', false);
+  if (typeResult.error) { formError.textContent = typeResult.error; return; }
+
+  let volgnr;
+  if (fAutoNr.checked) {
+    volgnr = nextVolgnrFor(domeinResult.code, typeResult.code);
+  } else {
+    volgnr = parseInt(fVolgnummer.value, 10);
+    if (!Number.isInteger(volgnr) || volgnr <= 0) {
+      formError.textContent = 'Volgnummer moet een positief geheel getal zijn.';
+      return;
+    }
+    if (isDuplicateCode(domeinResult.code, typeResult.code, volgnr)) {
+      formError.textContent = `Documentcode ${buildCode(domeinResult.code, typeResult.code, volgnr)} bestaat al binnen deze combinatie.`;
+      return;
+    }
+  }
+
+  // Alle validaties geslaagd: nu pas definitief committen naar de termregistry
+  const domeinFinal = resolveTermCode('domein', domeinTerm, fDomeinManualToggle.checked ? fDomeinManualCode.value : '', true);
+  const typeFinal = resolveTermCode('type', typeTerm, fTypeManualToggle.checked ? fTypeManualCode.value : '', true);
+  saveTermRegistry();
+
+  const now = new Date().toISOString();
+  const record = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    code: buildCode(domeinFinal.code, typeFinal.code, volgnr),
+    domeinTerm: domeinFinal.label, domeinCode: domeinFinal.code,
+    typeTerm: typeFinal.label, typeCode: typeFinal.code,
+    volgnr,
+    titel, eigenaar, status,
+    url: urlResult.url,
+    aangemaakt: now,
+    gewijzigd: now
+  };
+
+  records.push(record);
+  saveRecords();
+
+  // Formulier resetten (domein/type blijven staan — prettig bij reeksinvoer binnen dezelfde categorie)
+  fTitel.value = '';
+  fEigenaar.value = '';
+  fStatus.value = 'Concept';
+  fUrl.value = '';
+  fUrlError.textContent = '';
+  fAutoNr.checked = true;
+  refreshVolgnummerFieldState();
+  domeinFieldCtl.updateHintAndToggle();
+  typeFieldCtl.updateHintAndToggle();
+
+  populateFilterDropdowns();
+  renderTable();
+});
+
+/* ------------------------------------------------------------------
+   FILTER / ZOEKEN
+   ------------------------------------------------------------------ */
+const qSearch = document.getElementById('qSearch');
+const qDomein = document.getElementById('qDomein');
+const qType = document.getElementById('qType');
+const qStatus = document.getElementById('qStatus');
+
+function populateFilterDropdowns() {
+  const buildOptions = (selectEl, registry, allLabel) => {
+    const current = selectEl.value;
+    const entries = Object.values(registry).sort((a, b) => a.label.localeCompare(b.label));
+    selectEl.innerHTML = `<option value="">${allLabel}</option>` +
+      entries.map(e => `<option value="${escapeHtml(e.code)}">${escapeHtml(e.label)} (${escapeHtml(e.code)})</option>`).join('');
+    if ([...selectEl.options].some(o => o.value === current)) selectEl.value = current;
+  };
+  buildOptions(qDomein, termRegistry.domein, 'Alle domeinen');
+  buildOptions(qType, termRegistry.type, 'Alle types');
+}
+
+function getFilteredRecords() {
+  const term = qSearch.value.trim().toLowerCase();
+  return records
+    .filter(r => !qDomein.value || r.domeinCode === qDomein.value)
+    .filter(r => !qType.value || r.typeCode === qType.value)
+    .filter(r => !qStatus.value || r.status === qStatus.value)
+    .filter(r => !term ||
+      r.code.toLowerCase().includes(term) ||
+      r.titel.toLowerCase().includes(term) ||
+      r.domeinTerm.toLowerCase().includes(term) ||
+      r.typeTerm.toLowerCase().includes(term) ||
+      r.eigenaar.toLowerCase().includes(term))
+    .sort((a, b) => a.code.localeCompare(b.code));
+}
+
+[qSearch, qDomein, qType, qStatus].forEach(el => el.addEventListener('input', renderTable));
+document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+  qSearch.value = ''; qDomein.value = ''; qType.value = ''; qStatus.value = '';
+  renderTable();
+});
+
+/* ------------------------------------------------------------------
+   TABEL RENDEREN
+   ------------------------------------------------------------------ */
+function formatDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('nl-NL', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderTable() {
+  const filtered = getFilteredRecords();
+  const tbody = document.getElementById('tableBody');
+  const emptyState = document.getElementById('emptyState');
+
+  /** Toont de code alleen als deze daadwerkelijk afwijkt van de term (voorkomt dubbele weergave zoals "DVO DVO"). */
+  /** Documentcode-pill: klikbare link naar de gekoppelde cloudlocatie indien aanwezig, anders platte tekst. */
+  const codeCell = (r) => r.url
+    ? `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" class="code-pill code-pill-link" title="Openen: ${escapeHtml(r.url)}">${escapeHtml(r.code)} <span aria-hidden="true">↗</span></a>`
+    : `<span class="code-pill">${escapeHtml(r.code)}</span>`;
+  const codeSuffix = (term, code) => term.trim().toUpperCase() === code ? '' : ` <span class="term-code">${escapeHtml(code)}</span>`;
+
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td>${codeCell(r)}</td>
+      <td class="font-medium">${escapeHtml(r.titel)}</td>
+      <td>${escapeHtml(r.typeTerm)}${codeSuffix(r.typeTerm, r.typeCode)}</td>
+      <td>${escapeHtml(r.domeinTerm)}${codeSuffix(r.domeinTerm, r.domeinCode)}</td>
+      <td>${escapeHtml(r.eigenaar)}</td>
+      <td><span class="status-badge ${STATUS_CLASS[r.status] || ''}">${escapeHtml(r.status)}</span></td>
+      <td class="mono text-xs" style="color:var(--ink-soft);">${formatDate(r.gewijzigd)}</td>
+      <td class="text-right whitespace-nowrap">
+        <button class="btn btn-ghost btn-sm" data-action="edit" data-id="${r.id}">Wijzigen</button>
+        <button class="btn btn-danger-ghost btn-sm" data-action="delete" data-id="${r.id}">Verwijderen</button>
+      </td>
+    </tr>
+  `).join('');
+
+  emptyState.classList.toggle('hidden', filtered.length !== 0);
+  document.getElementById('recordCount').textContent = `${records.length} registratie${records.length === 1 ? '' : 's'}`;
+
+  updatePreview();
+}
+
+document.getElementById('tableBody').addEventListener('click', function (e) {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.action === 'edit') openEditModal(id);
+  if (btn.dataset.action === 'delete') openDeleteModal(id);
+});
+
+/* ------------------------------------------------------------------
+   MODAL: WIJZIGEN
+   (Domein, Type en Volgnummer zijn niet muteerbaar — de documentcode
+   ligt vast na registratie; alleen titel/eigenaar/status zijn te wijzigen)
+   ------------------------------------------------------------------ */
+const editModal = document.getElementById('editModal');
+
+function openEditModal(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('eId').value = r.id;
+  document.getElementById('editCodeLabel').textContent = r.code;
+  document.getElementById('eTitel').value = r.titel;
+  document.getElementById('eEigenaar').value = r.eigenaar;
+  document.getElementById('eStatus').value = r.status;
+  document.getElementById('eUrl').value = r.url || '';
+  document.getElementById('eUrlError').textContent = '';
+  editModal.classList.remove('hidden');
+}
+function closeEditModal() { editModal.classList.add('hidden'); }
+
+document.getElementById('editCancelBtn').addEventListener('click', closeEditModal);
+editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
+document.getElementById('eUrl').addEventListener('input', function () {
+  const result = validateUrl(this.value);
+  document.getElementById('eUrlError').textContent = result.valid ? '' : result.error;
+});
+
+document.getElementById('editForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const id = document.getElementById('eId').value;
+  const r = records.find(x => x.id === id);
+  if (!r) return closeEditModal();
+
+  const titel = document.getElementById('eTitel').value.trim();
+  const eigenaar = document.getElementById('eEigenaar').value.trim();
+  if (!titel || !eigenaar) return;
+
+  const urlResult = validateUrl(document.getElementById('eUrl').value);
+  if (!urlResult.valid) { document.getElementById('eUrlError').textContent = urlResult.error; return; }
+
+  r.titel = titel;
+  r.eigenaar = eigenaar;
+  r.status = document.getElementById('eStatus').value;
+  r.url = urlResult.url;
+  r.gewijzigd = new Date().toISOString();
+
+  saveRecords();
+  closeEditModal();
+  renderTable();
+});
+
+/* ------------------------------------------------------------------
+   MODAL: VERWIJDEREN (met bevestigingsstap)
+   ------------------------------------------------------------------ */
+const deleteModal = document.getElementById('deleteModal');
+let pendingDeleteId = null;
+
+function openDeleteModal(id) {
+  const r = records.find(x => x.id === id);
+  if (!r) return;
+  pendingDeleteId = id;
+  document.getElementById('deleteCodeLabel').textContent = r.code;
+  deleteModal.classList.remove('hidden');
+}
+function closeDeleteModal() { pendingDeleteId = null; deleteModal.classList.add('hidden'); }
+
+document.getElementById('deleteCancelBtn').addEventListener('click', closeDeleteModal);
+deleteModal.addEventListener('click', (e) => { if (e.target === deleteModal) closeDeleteModal(); });
+
+document.getElementById('deleteConfirmBtn').addEventListener('click', function () {
+  if (!pendingDeleteId) return;
+  records = records.filter(r => r.id !== pendingDeleteId);
+  saveRecords();
+  closeDeleteModal();
+  renderTable();
+  // Let op: de termregistry (domein-/typecodes) blijft bestaan na verwijderen van een registratie,
+  // zodat de code-toewijzing consistent blijft voor toekomstige nieuwe registraties met dezelfde term.
+});
+
+/* ------------------------------------------------------------------
+   EXPORT: CSV
+   ------------------------------------------------------------------ */
+function csvEscape(val) {
+  const s = String(val ?? '');
+  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+document.getElementById('exportCsvBtn').addEventListener('click', function () {
+  const headers = ['Documentcode', 'Titel', 'Documenttype', 'Typecode', 'Domein', 'Domeincode', 'Proceseigenaar', 'Status', 'Documentlocatie', 'Aangemaakt', 'Laatst gewijzigd'];
+  const rows = getFilteredRecords().map(r => [
+    r.code, r.titel, r.typeTerm, r.typeCode, r.domeinTerm, r.domeinCode,
+    r.eigenaar, r.status, r.url || '', formatDate(r.aangemaakt), formatDate(r.gewijzigd)
+  ]);
+  const csv = [headers, ...rows].map(row => row.map(csvEscape).join(';')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM voor correcte NL-tekens in Excel
+  downloadBlob(blob, `documentcode_register_${todayStamp()}.csv`);
+});
+
+/* ------------------------------------------------------------------
+   EXPORT / IMPORT: JSON (registraties + termregistry samen)
+   ------------------------------------------------------------------ */
+document.getElementById('exportJsonBtn').addEventListener('click', function () {
+  const payload = {
+    exportDatum: new Date().toISOString(),
+    bron: 'Documentcode Register — KAM Managementsysteem',
+    registraties: records,
+    termRegistry: termRegistry
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, `documentcode_register_${todayStamp()}.json`);
+});
+
+document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
+
+document.getElementById('importFileInput').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function (evt) {
+    try {
+      const parsed = JSON.parse(evt.target.result);
+      const incomingRecords = Array.isArray(parsed) ? parsed : parsed.registraties;
+      const incomingTerms = (parsed && parsed.termRegistry) || { domein: {}, type: {} };
+      if (!Array.isArray(incomingRecords)) throw new Error('Onverwacht JSON-formaat: verwacht een object met "registraties".');
+
+      // Stap 1: termregistry mergen (nieuwe termen/codes toevoegen, conflicten overslaan)
+      let termenToegevoegd = 0, termenOvergeslagen = 0;
+      ['domein', 'type'].forEach(kind => {
+        const incomingKind = incomingTerms[kind] || {};
+        const usedCodes = new Set(Object.values(termRegistry[kind]).map(v => v.code));
+        Object.entries(incomingKind).forEach(([key, entry]) => {
+          if (!entry || !entry.code || !entry.label) return;
+          if (termRegistry[kind][key]) { return; } // term al bekend, lokale koppeling blijft leidend
+          if (usedCodes.has(entry.code)) { termenOvergeslagen++; return; }
+          termRegistry[kind][key] = { label: entry.label, code: entry.code };
+          usedCodes.add(entry.code);
+          termenToegevoegd++;
+        });
+      });
+      saveTermRegistry();
+
+      // Stap 2: registraties toevoegen (op basis van de — eventueel zojuist gemergede — termregistry)
+      let toegevoegd = 0, overgeslagen = 0, dubbeleCodes = [];
+      incomingRecords.forEach(item => {
+        if (!item || !item.domeinTerm || !item.typeTerm || !item.volgnr || !item.titel || !item.eigenaar) {
+          overgeslagen++; return;
+        }
+        const domeinResult = resolveTermCode('domein', item.domeinTerm, item.domeinCode, true);
+        const typeResult = resolveTermCode('type', item.typeTerm, item.typeCode, true);
+        const code = buildCode(domeinResult.code, typeResult.code, item.volgnr);
+
+        if (records.some(r => r.id === item.id) || isDuplicateCode(domeinResult.code, typeResult.code, item.volgnr)) {
+          dubbeleCodes.push(code);
+          overgeslagen++; return;
+        }
+
+        const importUrlResult = validateUrl(item.url);
+
+        records.push({
+          id: item.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          code,
+          domeinTerm: domeinResult.label, domeinCode: domeinResult.code,
+          typeTerm: typeResult.label, typeCode: typeResult.code,
+          volgnr: item.volgnr,
+          titel: item.titel, eigenaar: item.eigenaar,
+          status: item.status || 'Concept',
+          url: importUrlResult.valid ? importUrlResult.url : '',
+          aangemaakt: item.aangemaakt || new Date().toISOString(),
+          gewijzigd: item.gewijzigd || new Date().toISOString()
+        });
+        toegevoegd++;
+      });
+
+      saveRecords();
+      saveTermRegistry();
+      populateFilterDropdowns();
+      renderTable();
+
+      let msg = `Import voltooid: ${toegevoegd} registratie(s) toegevoegd, ${overgeslagen} overgeslagen.`;
+      msg += `\nTermenlijst: ${termenToegevoegd} nieuwe term(en) toegevoegd, ${termenOvergeslagen} overgeslagen wegens codeconflict.`;
+      if (dubbeleCodes.length) msg += `\nOvergeslagen registraties wegens duplicaat: ${dubbeleCodes.join(', ')}`;
+      alert(msg);
+    } catch (err) {
+      console.error('Import mislukt:', err);
+      alert('Import mislukt: het bestand is geen geldig JSON-exportbestand van dit register.');
+    } finally {
+      e.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+});
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function todayStamp() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/* ------------------------------------------------------------------
+   INITIALISATIE
+   ------------------------------------------------------------------ */
+loadRecords();
+loadTermRegistry();
+refreshVolgnummerFieldState();
+domeinFieldCtl.updateHintAndToggle();
+typeFieldCtl.updateHintAndToggle();
+populateFilterDropdowns();
+renderTable();
+</script>
+</body>
+</html>
